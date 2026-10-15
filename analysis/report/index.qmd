@@ -3,7 +3,7 @@ title: "Palmer Penguins Part 2: Multiple Regression and Species Effects"
 author: "Ronald G. Thomas"
 date: "2025-01-02"
 categories: [r, regression]
-description: "Adding species identity to the body mass prediction model causes R-squared to jump from 0.76 to 0.86, demonstrating the power of biological groupings in multiple regression."
+description: "Adding species identity to the body mass prediction model causes R-squared to jump from 0.76 to 0.85, demonstrating the power of biological groupings in multiple regression."
 image: "media/images/hero.png"
 document-type: "blog"
 draft: false
@@ -26,11 +26,11 @@ Commons.*
 
 ::: {.callout-note}
 **Palmer Penguins Series:** This is part 2 of 5:
-[Part 1](/posts/08-palmerpenguinspart1/) |
-[Part 2](/posts/09-palmerpenguinspart2/) |
-[Part 3](/posts/10-palmerpenguinspart3/) |
-[Part 4](/posts/11-palmerpenguinspart4/) |
-[Part 5](/posts/12-palmerpenguinspart5/)
+[Part 1](/posts/pp-eda/) |
+[Part 2](/posts/pp-multiple-regression/) |
+[Part 3](/posts/pp-cross-validation/) |
+[Part 4](/posts/pp-diagnostics/) |
+[Part 5](/posts/pp-random-forest/)
 :::
 
 # Introduction
@@ -39,7 +39,7 @@ How much predictive power hides in the species
 variable? In Part 1, the analysis established that
 flipper length alone explains roughly 76% of body
 mass variance, a respectable baseline. Watching the
-R-squared climb past 0.86 after incorporating species
+R-squared climb past 0.84 after incorporating species
 identity is one of those clarifying moments in applied
 statistics where biological context transforms a good
 model into a substantially better one.
@@ -172,13 +172,14 @@ cat(
   "Part 1 Baseline:\n",
   "  R-squared =",
   round(simple_metrics$r.squared, 3), "\n",
-  "  RMSE =",
+  "  Residual SE =",
   round(sigma(simple_model), 1), "grams\n"
 )
 ```
 
 The simple model sets our floor: R-squared of 0.762
-and an RMSE of approximately 394 grams. Every model
+and a residual standard error of approximately 393
+grams. Every model
 built here should improve upon these values or
 explain why it does not.
 
@@ -218,17 +219,21 @@ cat(
   "vs",
   round(simple_metrics$r.squared, 3),
   "(simple)\n",
-  "  RMSE:",
+  "  Residual SE:",
   round(sigma(multiple_model), 1), "grams\n"
 )
 ```
 
-The improvement from 0.762 to approximately 0.816
-confirms that bill measurements carry predictive
-information beyond what flipper length provides.
-This 5.4 percentage point gain is meaningful in
-biological data, where measurement noise and
-individual variation typically limit gains.
+The improvement is negligible: R-squared moves from
+0.762 to roughly 0.764, a gain of about two tenths of
+a percentage point. Bill length and bill depth, added
+to flipper length, buy almost nothing. This is a
+useful negative result rather than a disappointment.
+It says that whatever the residual plot in Part 1 was
+signaling, more morphometric measurements of the same
+kind do not supply it, and it sets up the contrast
+with what happens when species identity enters the
+model.
 
 ## Checking Multicollinearity with VIF
 
@@ -327,10 +332,12 @@ cat(
 )
 ```
 
-The jump from 0.816 to 0.863 confirms that species
+The jump from 0.764 to 0.849 confirms that species
 identity provides substantial predictive power
-beyond morphometrics. This is the single largest
-incremental gain in this analysis.
+beyond morphometrics. At roughly 8.6 percentage
+points it is by far the single largest incremental
+gain in this analysis, and it dwarfs the negligible
+contribution of the two extra bill measurements.
 
 ## Species Effects
 
@@ -370,12 +377,12 @@ penguins are more similar in mass.
 ```{r}
 #| label: fig-species-model
 #| fig-cap: "Predicted vs actual body mass from
-#|   the species model, colour-coded by species.
+#|   the species model, color-coded by species.
 #|   Points clustering tightly along the diagonal
 #|   indicate strong predictive performance
-#|   (R-squared = 0.863)."
+#|   (R-squared = 0.849)."
 #| fig-alt: "Scatter plot showing predicted versus
-#|   actual body mass with species-coloured points.
+#|   actual body mass with species-colored points.
 #|   The three species form distinct clusters, and
 #|   the overall pattern follows a tight diagonal
 #|   line from lower-left to upper-right."
@@ -414,24 +421,37 @@ ggplot(
 ## Model Comparison Summary
 
 ```{r}
+r2_simple <- simple_metrics$r.squared
+r2_multiple <- multiple_metrics$r.squared
+r2_species <- species_metrics$r.squared
+
 cat(
   "Model Progression:\n",
-  "  Simple (Part 1):    R-squared = 0.762\n",
-  "  Multiple predictors: R-squared = 0.816",
-  "(+5.4%)\n",
-  "  + Species:           R-squared = 0.863",
-  "(+4.7%)\n",
+  sprintf(
+    "  Simple (Part 1):     R-squared = %.3f\n",
+    r2_simple
+  ),
+  sprintf(
+    "  Multiple predictors: R-squared = %.3f (%+.1f pts)\n",
+    r2_multiple, (r2_multiple - r2_simple) * 100
+  ),
+  sprintf(
+    "  + Species:           R-squared = %.3f (%+.1f pts)\n",
+    r2_species, (r2_species - r2_multiple) * 100
+  ),
   "\n",
-  "RMSE Reduction:",
+  "Residual standard error:",
   round(sigma(simple_model), 0), "->",
   round(sigma(species_model), 0), "grams\n"
 )
 ```
 
-The progression from 0.762 to 0.863 represents a
-meaningful improvement. Each step (adding
-morphometric predictors, then species identity)
-contributed a distinct and interpretable gain.
+The progression from 0.762 to 0.849 represents a
+meaningful improvement, but it is not evenly
+distributed across the two steps. Adding the bill
+measurements contributed almost nothing; adding
+species identity contributed essentially all of the
+gain.
 
 ## Practical Predictions
 
@@ -482,7 +502,7 @@ be useful for field monitoring applications.
 #|   specification is adequate."
 #| fig-alt: "Scatter plot of residuals versus
 #|   predicted values showing a roughly symmetric
-#|   cloud of points centred on zero, with no
+#|   cloud of points centered on zero, with no
 #|   visible fan shape or curvature."
 
 species_residuals <- residuals(species_model)
@@ -566,8 +586,8 @@ measurements.](media/images/ambiance3.png){.img-fluid height=3.5in}
   gain in predictive performance, demonstrating
   that biological context often matters more than
   additional continuous measurements.
-- The R-squared progression (0.762 to 0.816 to
-  0.863) provides a concrete example of how
+- The R-squared progression (0.762 to 0.764 to
+  0.849) provides a concrete example of how
   multiple regression decomposes variance across
   predictors.
 - Partial effects differ from marginal effects when
@@ -664,8 +684,9 @@ This analysis demonstrated that thoughtful
 predictor selection and biological context can
 improve a baseline model substantially. Starting
 from a simple regression with R-squared of 0.762,
-we achieved 0.863 by combining morphometric
-measurements with species identity.
+we achieved 0.849 by combining morphometric
+measurements with species identity, with species
+supplying virtually all of that gain.
 
 The central insight is that species differences
 persist and strengthen after controlling for
@@ -683,15 +704,16 @@ often substantial and, more importantly,
 scientifically interpretable.
 
 In conclusion, four points merit emphasis. First,
-adding bill length and bill depth to the model
-improved R-squared from 0.762 to 0.816, a gain of
-5.4 percentage points attributable solely to the
-additional morphometric information. Second, species
-identity lifted R-squared further to 0.863, adding
-4.7 percentage points and confirming that biological
+adding bill length and bill depth to the model moved
+R-squared only from 0.762 to 0.764, a gain of about
+0.2 percentage points: more measurements of the same
+kind added almost no information. Second, species
+identity lifted R-squared to 0.849, adding roughly
+8.6 percentage points and confirming that biological
 grouping variables carry substantial predictive
-content. Third, RMSE decreased from approximately
-394 to 300 grams across the model progression,
+content. Third, the residual standard error decreased
+from approximately 393 to 315 grams across the model
+progression,
 demonstrating that the improvements translate
 directly into more accurate individual predictions.
 Fourth, all VIF values remained below 5, confirming
