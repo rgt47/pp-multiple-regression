@@ -98,6 +98,8 @@ Feedback section at the end.*
 
 ![](media/images/r-logo.png){.img-fluid width=30% fig-align="center"}
 
+![Three groups of penguins of different species on a rocky beach.](media/images/ambiance1.jpg){.img-fluid height=3.5in}
+
 # Prerequisites and Setup
 
 This analysis requires the `palmerpenguins`,
@@ -576,7 +578,7 @@ inspection in Part 4.
 ![Photograph of penguins gathered on a shoreline,
 illustrating the colony-level variation that
 underlies individual morphometric
-measurements.](media/images/ambiance3.png){.img-fluid height=3.5in}
+measurements.](media/images/ambiance3.jpg){.img-fluid height=3.5in}
 
 ## Lessons Learned
 
